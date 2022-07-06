@@ -6,13 +6,13 @@ import 'package:flutter/scheduler.dart';
 import 'package:scroll_kit/src/sliver_list.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
 
-
 // ignore: must_be_immutable
 class SKPositionedList extends StatefulWidget {
-  SKPositionedList({Key? key,
-    required this.delegate,
-    this.forwardRefreshCount,
-    required this.controller})
+  SKPositionedList(
+      {Key? key,
+      required this.delegate,
+      this.forwardRefreshCount,
+      required this.controller})
       : super(key: key);
 
   final SKPositionController controller;
@@ -28,7 +28,8 @@ class SKPositionedList extends StatefulWidget {
   }
 }
 
-class _SKPositionedListState extends State<SKPositionedList> with SKPositionDelegate {
+class _SKPositionedListState extends State<SKPositionedList>
+    with SKPositionDelegate {
   int _forwardRefreshCount = 0;
 
   int? get forwardRefreshCount =>
@@ -43,13 +44,13 @@ class _SKPositionedListState extends State<SKPositionedList> with SKPositionDele
   /// 使用UniqueKey强制Rebuild.
   Key _k = UniqueKey();
 
-  SliverChildBuilderDelegate blockPrefix(int i,
-      SliverChildBuilderDelegate delegate) {
+  SliverChildBuilderDelegate blockPrefix(
+      int i, SliverChildBuilderDelegate delegate) {
     return SliverChildBuilderDelegate((context, index) {
       return delegate.builder(context, i + index);
     },
-        childCount: delegate.childCount == null ? null : delegate.childCount! -
-            i);
+        childCount:
+            delegate.childCount == null ? null : delegate.childCount! - i);
   }
 
   // Widget _wrapScrollTag(int index, Widget child) {
@@ -84,6 +85,9 @@ class _SKPositionedListState extends State<SKPositionedList> with SKPositionDele
     } else {
       forwardRefreshCount = widget.forwardRefreshCount;
     }
+
+    // TODO
+    // assert here is a scrollTag.
 
     // if (!hasWrapped) {
     //   /// wrap child for auto scroll
@@ -142,8 +146,8 @@ class _SKPositionedListState extends State<SKPositionedList> with SKPositionDele
 
   @override
   Future<void> scrollTo(int index) async {
-    return widget.controller.scrollController.scrollToIndex(
-        index, preferPosition: AutoScrollPosition.begin);
+    return widget.controller.scrollController
+        .scrollToIndex(index, preferPosition: AutoScrollPosition.begin);
   }
 }
 
@@ -154,15 +158,15 @@ mixin SKPositionDelegate {
 }
 
 class SKPositionController {
-
-  SKPositionController({double initialScrollOffset = 0.0,
-    bool keepScrollOffset: true,
-    double? suggestedRowHeight,
-    ViewportBoundaryGetter viewportBoundaryGetter:
-    defaultViewportBoundaryGetter,
-    Axis? axis,
-    String? debugLabel,
-    AutoScrollController? copyTagsFrom}) {
+  SKPositionController(
+      {double initialScrollOffset = 0.0,
+      bool keepScrollOffset: true,
+      double? suggestedRowHeight,
+      ViewportBoundaryGetter viewportBoundaryGetter:
+          defaultViewportBoundaryGetter,
+      Axis? axis,
+      String? debugLabel,
+      AutoScrollController? copyTagsFrom}) {
     scrollController = SimpleAutoScrollController(
         initialScrollOffset: initialScrollOffset,
         keepScrollOffset: keepScrollOffset,
@@ -173,7 +177,6 @@ class SKPositionController {
         copyTagsFrom: copyTagsFrom,
         debugLabel: debugLabel);
   }
-
 
   bool get attached => _delegate != null;
 

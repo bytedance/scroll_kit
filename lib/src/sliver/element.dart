@@ -51,6 +51,7 @@ class SKSliverMultiBoxAdaptorElement extends RenderObjectElement implements Rend
       final SKSliverMultiBoxAdaptorWidget adaptorWidget = widget as SKSliverMultiBoxAdaptorWidget;
       final forwardRefreshCount = adaptorWidget.forwardRefreshCount;
 
+      // MOD
       assert(() {
         if (forwardRefreshCount != null && forwardRefreshCount != 0) {
           if (!_childElements.keys.contains(0)) {
@@ -58,7 +59,7 @@ class SKSliverMultiBoxAdaptorElement extends RenderObjectElement implements Rend
           }
         }
         return true;
-      }(), "forwardRefresh: error when child(0) is not created");
+      }(), "ScrollKit: error when child(0) is not created");
 
       var i = List<int>.from(
           _childElements.keys.where((e) => e < (forwardRefreshCount ?? 0)));
@@ -68,7 +69,6 @@ class SKSliverMultiBoxAdaptorElement extends RenderObjectElement implements Rend
           _childElements.remove(i);
         }
       } else {
-        // 删除 0 之前的 element.
         for (var index in i) {
           _currentlyUpdatingChildIndex = index;
           _childElements[index] =
@@ -76,6 +76,7 @@ class SKSliverMultiBoxAdaptorElement extends RenderObjectElement implements Rend
           _childElements.remove(index);
         }
       }
+      // END
 
       void processElement(int index) {
         _currentlyUpdatingChildIndex = index;
@@ -171,8 +172,10 @@ class SKSliverMultiBoxAdaptorElement extends RenderObjectElement implements Rend
           childrenUpdated = childrenUpdated || _childElements[index] != newChild;
           _childElements[index] = newChild;
           final SliverMultiBoxAdaptorParentData parentData = newChild.renderObject!.parentData! as SliverMultiBoxAdaptorParentData;
+          // MOD
           if (index == (forwardRefreshCount ?? 0)) {
             parentData.layoutOffset = 0.0;
+          // END
           } else if (indexToLayoutOffset.containsKey(index)) {
             parentData.layoutOffset = indexToLayoutOffset[index];
           }
@@ -244,12 +247,12 @@ class SKSliverMultiBoxAdaptorElement extends RenderObjectElement implements Rend
       renderObject.debugChildIntegrityEnabled = false; // Moving children will temporary violate the integrity.
 
       // MOD
-      // newChildren.keys.forEach(processElement);
       newChildren.keys.where((e) => e >= (forwardRefreshCount ?? 0))
           .toList()
           .forEach((e) {
         processElement(e);
       });
+      // END
 
       // An element rebuild only updates existing children. The underflow check
       // is here to make sure we look ahead one more child if we were at the end

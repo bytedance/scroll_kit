@@ -5,6 +5,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:scroll_kit/scroll_kit.dart';
+import 'package:scroll_to_index/scroll_to_index.dart';
 
 const numberOfItems = 5001;
 const minItemHeight = 20.0;
@@ -119,7 +120,6 @@ class _ScrollablePositionedListPageState
   }();
 
   Widget list1() {
-
     controller = SKPositionController(
         viewportBoundaryGetter: () =>
             Rect.fromLTRB(0, 0, 0, MediaQuery.of(context).padding.bottom),
@@ -131,12 +131,20 @@ class _ScrollablePositionedListPageState
       delegate: SliverChildBuilderDelegate(
               (context, index) {
             // if(useMore) assert(index != 0);
-            return Container(
+            final c = Container(
               height: 80,
               color: Colors.grey,
               child: Center(
                 child: Text(data[index].index.toString()),
               ),
+            );
+
+            return  AutoScrollTag(
+              key: ValueKey(index),
+              controller: controller.scrollController,
+              index: index,
+              highlightColor: Colors.black.withOpacity(0.1),
+              child: c,
             );
           },
           childCount: data.length,
