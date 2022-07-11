@@ -40,115 +40,6 @@ class SKSliverMultiBoxAdaptorElement extends RenderObjectElement implements Rend
   final SplayTreeMap<int, Element?> _childElements = SplayTreeMap<int, Element?>();
   RenderBox? _currentBeforeChild;
 
-  void performRebuild1() {
-    super.performRebuild();
-    _currentBeforeChild = null;
-    assert(_currentlyUpdatingChildIndex == null);
-
-    try {
-      final newChildren = SplayTreeMap<int, Element?>();
-      final Map<int, double> indexToLayoutOffset = HashMap<int, double>();
-      final SKSliverMultiBoxAdaptorWidget adaptorWidget = widget as SKSliverMultiBoxAdaptorWidget;
-      final forwardRefreshCount = adaptorWidget.forwardRefreshCount;
-
-      // MOD
-      assert(() {
-        if (forwardRefreshCount != null && forwardRefreshCount != 0) {
-          if (!_childElements.keys.contains(0)) {
-            return false;
-          }
-        }
-        return true;
-      }(), "ScrollKit: error when child(0) is not created");
-
-      var i = List<int>.from(
-          _childElements.keys.where((e) => e < (forwardRefreshCount ?? 0)));
-      if (i.length == _childElements.keys.length) {
-        for (var i = 0; i < _childElements.keys.length; i++) {
-          _childElements[i + forwardRefreshCount!] = _childElements[i]!;
-          _childElements.remove(i);
-        }
-      } else {
-        for (var index in i) {
-          _currentlyUpdatingChildIndex = index;
-          _childElements[index] =
-              updateChild(_childElements[index]!, null, index);
-          _childElements.remove(index);
-        }
-      }
-      // END
-
-      void processElement(int index) {
-        _currentlyUpdatingChildIndex = index;
-        if (_childElements[index] != null &&
-            _childElements[index] != newChildren[index]) {
-          // This index has an old child that isn't used anywhere and should be deactivated.
-          _childElements[index] =
-              updateChild(_childElements[index], null, index);
-        }
-        final newChild = updateChild(newChildren[index], _build(index, adaptorWidget), index);
-        if (newChild != null) {
-          _childElements[index] = newChild;
-          final parentData = newChild.renderObject!.parentData
-          as SliverMultiBoxAdaptorParentData;
-          if (index == (forwardRefreshCount ?? 0)) {
-            parentData.layoutOffset = 0.0;
-          } else if (indexToLayoutOffset.containsKey(index)) {
-            parentData.layoutOffset = indexToLayoutOffset[index];
-          }
-          if (!parentData.keptAlive) {
-            _currentBeforeChild = newChild.renderObject as RenderBox;
-          }
-        } else {
-          _childElements.remove(index);
-        }
-      }
-
-      for (final index in _childElements.keys.toList()) {
-        final key = _childElements[index]!.widget.key;
-        final newIndex =
-        key == null ? null : adaptorWidget.delegate.findIndexByKey(key);
-        final childParentData = _childElements[index]!.renderObject!.parentData
-        as SliverMultiBoxAdaptorParentData;
-
-        if (childParentData != null && childParentData.layoutOffset != null) {
-          indexToLayoutOffset[index] = childParentData.layoutOffset!;
-        }
-
-        if (newIndex != null && newIndex != index) {
-          // The layout offset of the child being moved is no longer accurate.
-          if (childParentData != null) childParentData.layoutOffset = null;
-
-          newChildren[newIndex] = _childElements[index];
-          // We need to make sure the original index gets processed.
-          newChildren.putIfAbsent(index, () => null);
-          // We do not want the remapped child to get deactivated during processElement.
-          _childElements.remove(index);
-        } else {
-          newChildren.putIfAbsent(index, () => _childElements[index]);
-        }
-      }
-
-      renderObject.debugChildIntegrityEnabled =
-      false; // Moving children will temporary violate the integrity.
-      newChildren.keys.where((e) => e >= (forwardRefreshCount ?? 0))
-          .toList()
-          .forEach((e) {
-        processElement(e);
-      });
-      if (_didUnderflow) {
-        final lastKey = _childElements.lastKey() ??
-            (forwardRefreshCount ?? 0) - 1;
-        final rightBoundary = lastKey + 1;
-        newChildren[rightBoundary] = _childElements[rightBoundary];
-        processElement(rightBoundary);
-      }
-    } finally {
-      _currentlyUpdatingChildIndex = null;
-      renderObject.debugChildIntegrityEnabled = true;
-    }
-  }
-
   @override
   void performRebuild() {
     super.performRebuild();
@@ -189,14 +80,8 @@ class SKSliverMultiBoxAdaptorElement extends RenderObjectElement implements Rend
       }
 
       // ADD
-      assert(() {
-        if (forwardRefreshCount != null && forwardRefreshCount != 0) {
-          if (!_childElements.keys.contains(0)) {
-            return false;
-          }
-        }
-        return true;
-      }(), "forwardRefresh: error when child(0) is not created");
+      assert(forwardRefreshCount != null && forwardRefreshCount != 0
+          && _childElements.keys.contains(0), "forwardRefresh: error when child(0) is not created");
 
       var i = List<int>.from(
           _childElements.keys.where((e) => e < (forwardRefreshCount ?? 0)));
@@ -206,7 +91,6 @@ class SKSliverMultiBoxAdaptorElement extends RenderObjectElement implements Rend
           _childElements.remove(i);
         }
       } else {
-        // 删除 0 之前的 element.
         for (var index in i) {
           _currentlyUpdatingChildIndex = index;
           _childElements[index] =
@@ -263,12 +147,13 @@ class SKSliverMultiBoxAdaptorElement extends RenderObjectElement implements Rend
       //
       // This logic is not needed if any existing children has been updated,
       // because we will not skip the layout phase if that happens.
-      // if (!childrenUpdated && _didUnderflow) {
-      //   final int lastKey = _childElements.lastKey() ?? -1;
-      //   final int rightBoundary = lastKey + 1;
-      //   newChildren[rightBoundary] = _childElements[rightBoundary];
-      //   processElement(rightBoundary);
-      // }
+      // 需要验证
+      if (!childrenUpdated && _didUnderflow) {
+        final int lastKey = _childElements.lastKey() ?? -1;
+        final int rightBoundary = lastKey + 1;
+        newChildren[rightBoundary] = _childElements[rightBoundary];
+        processElement(rightBoundary);
+      }
 
       // END
     } finally {

@@ -137,7 +137,6 @@ class _SKPositionedListState extends State<SKPositionedList>
     SchedulerBinding.instance!.addPostFrameCallback((timeStamp) {
       setState(() {
         _isInSecondRefresh = true;
-        // TODO: completer结束的时机不对.
         completer.complete();
       });
     });
