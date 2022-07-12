@@ -2,9 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
+import 'package:scroll_kit/src/sk_child_delegate.dart';
 
 // import 'box.dart';
 // import 'object.dart';
@@ -188,8 +191,10 @@ abstract class SKRenderSliverMultiBoxAdaptor extends RenderSliver
   /// The [childManager] argument must not be null.
   SKRenderSliverMultiBoxAdaptor({
     required RenderSliverBoxChildManager childManager,
+    required SKLifeCycleManager lifeCycleManager
   }) : assert(childManager != null),
-        _childManager = childManager {
+        _childManager = childManager,
+        _lifeCycleManager = lifeCycleManager{
     assert(() {
       _debugDanglingKeepAlives = <RenderBox>[];
       return true;
@@ -198,8 +203,9 @@ abstract class SKRenderSliverMultiBoxAdaptor extends RenderSliver
 
   @override
   void setupParentData(RenderObject child) {
-    if (child.parentData is! SliverMultiBoxAdaptorParentData)
+    if (child.parentData is! SliverMultiBoxAdaptorParentData) {
       child.parentData = SliverMultiBoxAdaptorParentData();
+    }
   }
 
   /// The delegate that manages the children of this object.
@@ -240,8 +246,9 @@ abstract class SKRenderSliverMultiBoxAdaptor extends RenderSliver
   void adoptChild(RenderObject child) {
     super.adoptChild(child);
     final SliverMultiBoxAdaptorParentData childParentData = child.parentData! as SliverMultiBoxAdaptorParentData;
-    if (!childParentData._keptAlive)
+    if (!childParentData._keptAlive) {
       childManager.didAdoptChild(child as RenderBox);
+    }
   }
 
   bool _debugAssertChildListLocked() => childManager.debugAssertChildListLocked();
@@ -334,6 +341,46 @@ abstract class SKRenderSliverMultiBoxAdaptor extends RenderSliver
     _keepAliveBucket.values.forEach(dropChild);
     _keepAliveBucket.clear();
   }
+
+  // ADD
+
+  final List<int> _exposedChildren = [];
+
+  final SKLifeCycleManager _lifeCycleManager;
+
+  void handleLifeCycle({required SliverConstraints constraints, double? extent}) {
+    var leadingEdge = constraints.scrollOffset;
+    var trailingEdge = constraints.scrollOffset + constraints.remainingPaintExtent;
+    var exposeRatio = _lifeCycleManager.exposedRatio;
+    var validExposedTime = _lifeCycleManager.validExposedTime;
+    {
+      var child = firstChild;
+      while (child != null) {
+        final index = indexOf(child);
+        if (child.hasSize &&
+            childScrollOffset(child)! + exposeRatio * (extent ?? paintExtentOf(child)) <= trailingEdge &&
+            childScrollOffset(child)! + (extent ?? paintExtentOf(child)) * (1 - exposeRatio) >= leadingEdge) {
+          // in the valid area.
+          if (!_exposedChildren.contains(index)) {
+            _exposedChildren.add(index);
+            Timer(Duration(milliseconds: validExposedTime), (){
+              if(_exposedChildren.contains(index)) {
+                _lifeCycleManager.onAppear(index);
+              }
+            });
+          }
+        } else {
+          if (_exposedChildren.contains(index)) {
+            _lifeCycleManager.onDisAppear(index);
+            _exposedChildren.remove(index);
+          }
+        }
+        child = (child.parentData as SliverMultiBoxAdaptorParentData).nextSibling;
+      }
+    }
+  }
+
+  // END
 
   void _createOrObtainChild(int index, { required RenderBox? after }) {
     invokeLayoutCallback<SliverConstraints>((SliverConstraints constraints) {
