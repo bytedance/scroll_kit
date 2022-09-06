@@ -1,4 +1,4 @@
-scroll_kit
+ScrollKit
 ---
 
 ScrollKit provides additional features for list in Flutter Apps.
