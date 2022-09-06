@@ -43,7 +43,7 @@ class _LoadMoreExampleState extends State<LoadMorePage> {
           onPressed: () {
             _positionController.scrollTo(10);
           },
-          child: const Text("scrollTo10"),
+          child: const Text("scroll10"),
         ),
       ],
     );

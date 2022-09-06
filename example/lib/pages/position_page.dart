@@ -50,88 +50,80 @@ class _ScrollablePositionedListPageState
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("Position")),
-      body:  OrientationBuilder(
-        builder: (context, orientation) =>
-            Column(
-              children: <Widget>[
-                Expanded(
-                  child: list1(),
-                  // child: list(orientation),
-                ),
-                Container(
-                    height: 100,
-                    child: Row(
-                      children: <Widget>[
-                        Column(
-                          children: <Widget>[
-                            scrollControlButtons,
-                            jumpControlButtons,
-                          ],
-                        ),
-                      ],
-                    )
-                )
-              ],
-            ),
+  Widget build(BuildContext context) => Material(
+    child: OrientationBuilder(
+      builder: (context, orientation) => Column(
+        children: <Widget>[
+          Expanded(
+            child: list1(),
+            // child: list(orientation),
+          ),
+          Container(
+              height: 100,
+              child: Row(
+                children: <Widget>[
+                  Column(
+                    children: <Widget>[
+                      scrollControlButtons,
+                      jumpControlButtons,
+                      // alignmentControl,
+                    ],
+                  ),
+                ],
+              )
+          )
+        ],
       ),
-    );
-  }
+    ),
+  );
 
-    Widget get alignmentControl => Row(
-      mainAxisSize: MainAxisSize.max,
-      children: <Widget>[
-        const Text('Alignment: '),
-        SizedBox(
-          width: 100,
-          child: SliderTheme(
-            data: SliderThemeData(
-              showValueIndicator: ShowValueIndicator.always,
-            ),
-            child: Slider(
-              value: alignment,
-              label: alignment.toStringAsFixed(2),
-              onChanged: (double value) => setState(() => alignment = value),
-            ),
+  Widget get alignmentControl => Row(
+    mainAxisSize: MainAxisSize.max,
+    children: <Widget>[
+      const Text('Alignment: '),
+      SizedBox(
+        width: 100,
+        child: SliderTheme(
+          data: SliderThemeData(
+            showValueIndicator: ShowValueIndicator.always,
+          ),
+          child: Slider(
+            value: alignment,
+            label: alignment.toStringAsFixed(2),
+            onChanged: (double value) => setState(() => alignment = value),
           ),
         ),
-      ],
+      ),
+    ],
+  );
+
+  late SKPositionController controller;
+
+  List<int> data = () {
+    List<int> data = <int>[];
+    for (var i = 0; i < 50; i++) {
+      data.add(i);
+    }
+    return data;
+  }();
+
+  Widget list1() {
+
+    controller = SKPositionController(
+        viewportBoundaryGetter: () =>
+            Rect.fromLTRB(0, 0, 0, MediaQuery.of(context).padding.bottom),
+        axis: Axis.vertical
     );
 
-    late SKPositionController controller;
-
-    List<TempData> data = () {
-      List<TempData> data = [];
-      for (var i = -40; i < -10; i++) {
-        data.add(TempData()..index = i);
-      }
-      for (var i = -10; i < 0; i++) {
-        data.add(TempData()..index = i);
-      }
-      for (var i = 0; i < 10; i++) {
-        data.add(TempData()..index = i);
-      }
-      return data;
-    }();
-
-    Widget list1() {
-      controller = SKPositionController(
-          viewportBoundaryGetter: () =>
-              Rect.fromLTRB(0, 0, 0, MediaQuery.of(context).padding.bottom),
-          axis: Axis.vertical
-      );
-
-      return SKPositionedList(
-        controller: controller,
-        delegate: SKSliverChildBuilderDelegate(
+    return SKPositionedList(
+      controller: controller,
+      delegate: SKSliverChildBuilderDelegate(
               (context, index) {
             return Container(
               height: 80,
               color: Colors.grey,
               child: Center(
-                child: Text(data[index].index.toString()),
+                child: Text(data[index].toString()),
               ),
             );
           },
@@ -141,25 +133,25 @@ class _ScrollablePositionedListPageState
       );
     }
 
-    Widget get scrollControlButtons => Row(
-      children: <Widget>[
-        const SizedBox(child: Text('scroll to'), height: 40,),
-        scrollButton(0),
-        scrollButton(5),
-        scrollButton(10),
-        scrollButton(30),
-      ],
-    );
+  Widget get scrollControlButtons => Row(
+    children: <Widget>[
+      const Text('scroll to'),
+      scrollButton(0),
+      scrollButton(5),
+      scrollButton(10),
+      scrollButton(30),
+    ],
+  );
 
-    Widget get jumpControlButtons => Row(
-      children: <Widget>[
-        const SizedBox(child: Text('jump to'), height: 40,),
-        jumpButton(0),
-        jumpButton(5),
-        jumpButton(10),
-        jumpButton(30),
-      ],
-    );
+  Widget get jumpControlButtons => Row(
+    children: <Widget>[
+      const Text('jump to'),
+      jumpButton(0),
+      jumpButton(5),
+      jumpButton(10),
+      jumpButton(30),
+    ],
+  );
 
     final _scrollButtonStyle = ButtonStyle(
       padding: MaterialStateProperty.all(
@@ -206,8 +198,4 @@ class _ScrollablePositionedListPageState
         ),
       );
   }
-}
-
-class TempData {
-  int? index;
 }
