@@ -1,4 +1,8 @@
-import 'package:example/position_page.dart';
+// Copyright (2022) Bytedance Inc.
+
+import 'package:example/pages/life_cycle_page.dart';
+import 'package:example/pages/loadMore_page.dart';
+import 'package:example/pages/position_page.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -8,6 +12,8 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
@@ -26,7 +32,11 @@ class HomePage extends StatelessWidget {
 
   final Map<String, Widget> m = {
     "Position": const PositionedListPage(),
+    "loadMore": const LoadMorePage(),
+    "LifeCycle": const LifeCyclePage()
   };
+
+  HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {

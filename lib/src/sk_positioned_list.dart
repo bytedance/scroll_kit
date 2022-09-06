@@ -1,10 +1,12 @@
+// Copyright (2022) Bytedance Inc.
+
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:scroll_kit/src/sliver_list.dart';
+import 'package:scroll_kit/src/sk_sliver_list.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
+import 'sk_child_delegate.dart';
 
 // ignore: must_be_immutable
 class SKPositionedList extends StatefulWidget {
@@ -16,7 +18,7 @@ class SKPositionedList extends StatefulWidget {
       : super(key: key);
 
   final SKPositionController controller;
-  SliverChildBuilderDelegate delegate;
+  SKSliverChildBuilderDelegate delegate;
   final int? forwardRefreshCount;
 
   @override
@@ -39,42 +41,35 @@ class _SKPositionedListState extends State<SKPositionedList>
 
   bool _isInSecondRefresh = false;
 
-  late SliverChildBuilderDelegate previousDelegate;
+  late SKSliverChildBuilderDelegate previousDelegate;
 
-  /// 使用UniqueKey强制Rebuild.
   Key _k = UniqueKey();
 
-  SliverChildBuilderDelegate blockPrefix(
-      int i, SliverChildBuilderDelegate delegate) {
-    return SliverChildBuilderDelegate((context, index) {
+  SKSliverChildBuilderDelegate blockPrefix(
+      int i, SKSliverChildBuilderDelegate delegate) {
+    return SKSliverChildBuilderDelegate((context, index) {
       return delegate.builder(context, i + index);
-    },
-        childCount:
-            delegate.childCount == null ? null : delegate.childCount! - i);
+    }, childCount: delegate.childCount! - i);
   }
 
-  // Widget _wrapScrollTag(int index, Widget child) {
-  //   return AutoScrollTag(
-  //     key: ValueKey(index),
-  //     controller: widget.controller.scrollController,
-  //     index: index,
-  //     highlightColor: Colors.black.withOpacity(0.1),
-  //     child: child,
-  //   );
-  // }
-  //
-  // bool hasWrapped = false;
+  Widget _wrapScrollTag(int index, Widget child) {
+    return AutoScrollTag(
+      key: ValueKey(index),
+      controller: widget.controller.scrollController,
+      index: index,
+      highlightColor: Colors.black.withOpacity(0.1),
+      child: child,
+    );
+  }
+
+  bool hasWrapped = false;
 
   @override
   Widget build(BuildContext context) {
     int? forwardRefreshCount = 0;
+
+    /// To ForwardRefresh we need to do setState two times.
     if (_isPositioning) {
-      /// 判断是否是两次刷新
-      ///
-      /// 第一次刷新时只将前面的数据block，所以会呈现出jumpTo的效果，但是实际上此时对于
-      /// 列表而言前面的数据是缺失的。
-      ///
-      /// 第二次刷新再把前面的数据都加载进来，使得可以继续向前滑动。
       if (_isInSecondRefresh) {
         widget.delegate = previousDelegate;
         forwardRefreshCount = _forwardRefreshCount;
@@ -86,18 +81,15 @@ class _SKPositionedListState extends State<SKPositionedList>
       forwardRefreshCount = widget.forwardRefreshCount;
     }
 
-    // TODO
-    // assert here is a scrollTag.
-
-    // if (!hasWrapped) {
-    //   /// wrap child for auto scroll
-    //   var builder = widget.delegate.builder;
-    //   widget.delegate.builder = (BuildContext c, int i) {
-    //     var w = builder(c, i);
-    //     return _wrapScrollTag(i, w);
-    //   };
-    //   hasWrapped = true;
-    // }
+    if (!hasWrapped) {
+      /// wrap child for auto scroll
+      var builder = widget.delegate.builder;
+      widget.delegate.builder = (BuildContext c, int i) {
+        var w = builder(c, i);
+        return _wrapScrollTag(i, w!);
+      };
+      hasWrapped = true;
+    }
 
     var scrollView = CustomScrollView(
       key: _k,
@@ -152,7 +144,9 @@ class _SKPositionedListState extends State<SKPositionedList>
 
 mixin SKPositionDelegate {
   bool get isPositioning;
+
   Future<void> scrollTo(int index);
+
   Future<void> jumpTo(int index);
 }
 
@@ -176,8 +170,6 @@ class SKPositionController {
         copyTagsFrom: copyTagsFrom,
         debugLabel: debugLabel);
   }
-
-  bool get attached => _delegate != null;
 
   late SKPositionDelegate _delegate;
 
