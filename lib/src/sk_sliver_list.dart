@@ -1,38 +1,49 @@
+// Copyright 2014 The Flutter Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// This file may have been modified by Bytedance Inc.(“Bytedance Inc.'s
+// Modifications”). All Bytedance Inc.'s Modifications are Copyright (2022)
+// Bytedance Inc..
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
-import 'sliver/widget.dart';
-import 'sliver/element.dart';
+import 'sk_child_delegate.dart';
+import 'adaptor/widget.dart';
+import 'adaptor/element.dart';
+import 'adaptor/ro.dart';
 
 class SKSliverList extends SKSliverMultiBoxAdaptorWidget {
   /// Creates a sliver that places box children in a linear array.
   const SKSliverList({
     super.key,
-    required super.delegate, this.forwardRefreshCount,
+    required super.delegate,
+    super.forwardRefreshCount,
   });
-
-  final int? forwardRefreshCount;
 
   @override
   SKSliverMultiBoxAdaptorElement createElement() =>
-      SKSliverMultiBoxAdaptorElement(this, replaceMovedChildren: true,);
+      SKSliverMultiBoxAdaptorElement(this, replaceMovedChildren: true);
 
   @override
   SKRenderSliverList createRenderObject(BuildContext context) {
     final SKSliverMultiBoxAdaptorElement element =
         context as SKSliverMultiBoxAdaptorElement;
-    return SKRenderSliverList(childManager: element);
+    return SKRenderSliverList(
+        childManager: element, lifeCycleManager: delegate);
   }
 }
 
-class SKRenderSliverList extends RenderSliverMultiBoxAdaptor {
+class SKRenderSliverList extends SKRenderSliverMultiBoxAdaptor {
   /// Creates a sliver that places multiple box children in a linear array along
   /// the main axis.
   ///
   /// The [childManager] argument must not be null.
-  SKRenderSliverList({
-    required super.childManager,
-  });
+  SKRenderSliverList(
+      {required RenderSliverBoxChildManager childManager,
+      required SKLifeCycleManager lifeCycleManager})
+      : super(childManager: childManager, lifeCycleManager: lifeCycleManager);
 
   @override
   void performLayout() {
@@ -122,8 +133,8 @@ class SKRenderSliverList extends RenderSliverMultiBoxAdaptor {
       earliestUsefulChild =
           insertAndLayoutLeadingChild(childConstraints, parentUsesSize: true);
       if (earliestUsefulChild == null) {
-        final SliverMultiBoxAdaptorParentData childParentData =
-            firstChild!.parentData! as SliverMultiBoxAdaptorParentData;
+        final SKSliverMultiBoxAdaptorParentData childParentData =
+            firstChild!.parentData! as SKSliverMultiBoxAdaptorParentData;
         childParentData.layoutOffset = 0.0;
 
         if (scrollOffset == 0.0) {
@@ -155,14 +166,14 @@ class SKRenderSliverList extends RenderSliverMultiBoxAdaptor {
         geometry = SliverGeometry(
           scrollOffsetCorrection: -firstChildScrollOffset,
         );
-        final SliverMultiBoxAdaptorParentData childParentData =
-            firstChild!.parentData! as SliverMultiBoxAdaptorParentData;
+        final SKSliverMultiBoxAdaptorParentData childParentData =
+            firstChild!.parentData! as SKSliverMultiBoxAdaptorParentData;
         childParentData.layoutOffset = 0.0;
         return;
       }
 
-      final SliverMultiBoxAdaptorParentData childParentData =
-          earliestUsefulChild.parentData! as SliverMultiBoxAdaptorParentData;
+      final SKSliverMultiBoxAdaptorParentData childParentData =
+          earliestUsefulChild.parentData! as SKSliverMultiBoxAdaptorParentData;
       childParentData.layoutOffset = firstChildScrollOffset;
       assert(earliestUsefulChild == firstChild);
       leadingChildWithLayout = earliestUsefulChild;
@@ -186,8 +197,8 @@ class SKRenderSliverList extends RenderSliverMultiBoxAdaptor {
         assert(earliestUsefulChild != null);
         final double firstChildScrollOffset =
             earliestScrollOffset - paintExtentOf(firstChild!);
-        final SliverMultiBoxAdaptorParentData childParentData =
-            firstChild!.parentData! as SliverMultiBoxAdaptorParentData;
+        final SKSliverMultiBoxAdaptorParentData childParentData =
+            firstChild!.parentData! as SKSliverMultiBoxAdaptorParentData;
         childParentData.layoutOffset = 0.0;
         // We only need to correct if the leading child actually has a
         // paint extent.
@@ -253,8 +264,8 @@ class SKRenderSliverList extends RenderSliverMultiBoxAdaptor {
         trailingChildWithLayout = child;
       }
       assert(child != null);
-      final SliverMultiBoxAdaptorParentData childParentData =
-          child!.parentData! as SliverMultiBoxAdaptorParentData;
+      final SKSliverMultiBoxAdaptorParentData childParentData =
+          child!.parentData! as SKSliverMultiBoxAdaptorParentData;
       childParentData.layoutOffset = endScrollOffset;
       assert(childParentData.index == index);
       endScrollOffset = childScrollOffset(child!)! + paintExtentOf(child!);
@@ -296,6 +307,8 @@ class SKRenderSliverList extends RenderSliverMultiBoxAdaptor {
         child = childAfter(child!);
       }
     }
+
+    handleLifeCycle(constraints: constraints);
 
     // At this point everything should be good to go, we just have to clean up
     // the garbage and report the geometry.

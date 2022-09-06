@@ -1,4 +1,15 @@
+// Copyright 2014 The Flutter Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// This file may have been modified by Bytedance Inc.(“Bytedance Inc.'s
+// Modifications”). All Bytedance Inc.'s Modifications are Copyright (2022)
+// Bytedance Inc..
+
 import 'package:flutter/cupertino.dart';
+
+import 'adaptor/ro.dart';
+import 'adaptor/widget.dart';
 
 int _kDefaultSemanticIndexCallback(Widget _, int localIndex) => localIndex;
 
@@ -10,7 +21,7 @@ abstract class SKLifeCycleManager {
   /// For example, exposedRatio = 0.3 and validExposedTime = 100(ms)
   /// 'onAppear' will be called when the percentage of A exposed to the screen
   /// exceeds 30% and the time exceeds 100 milliseconds.
-  /// And these two values only relate to [SKLifeCycleManager.onAppear].
+  /// And these two values are only relate to [SKLifeCycleManager.onAppear].
   double get exposedRatio;
   int get validExposedTime;
 
@@ -21,7 +32,7 @@ abstract class SKLifeCycleManager {
   void onRemove(int index);
 }
 
-class SliverChildBuilderDelegate extends SliverChildDelegate implements SKLifeCycleManager {
+class SKSliverChildBuilderDelegate extends SliverChildDelegate implements SKLifeCycleManager {
   /// Creates a delegate that supplies children for slivers using the given
   /// builder callback.
   ///
@@ -33,10 +44,10 @@ class SliverChildBuilderDelegate extends SliverChildDelegate implements SKLifeCy
   /// providing a [findChildIndexCallback]. This allows the delegate to find the
   /// new index for a child that was previously located at a different index to
   /// attach the existing state to the [Widget] at its new location.
-  const SliverChildBuilderDelegate(
+  SKSliverChildBuilderDelegate(
       this.builder, {
         this.findChildIndexCallback,
-        this.childCount,
+        int? childCount,
         this.addAutomaticKeepAlives = true,
         this.addRepaintBoundaries = true,
         this.addSemanticIndexes = true,
@@ -44,9 +55,11 @@ class SliverChildBuilderDelegate extends SliverChildDelegate implements SKLifeCy
         void Function(int index)? onAppear,
         void Function(int index)? onDisAppear,
         void Function(int index)? onRemove,
-        String Function(int index)? reuseIdentifier,
+        this.reuseIdentifier,
         double? exposedRatio,
         int? validExposedTime,
+        this.childCountGetter,
+        this.loadMoreController,
         // END
         this.semanticIndexCallback = _kDefaultSemanticIndexCallback,
         this.semanticIndexOffset = 0,
@@ -54,13 +67,12 @@ class SliverChildBuilderDelegate extends SliverChildDelegate implements SKLifeCy
   _onAppear = onAppear,
   _onDisappear = onDisAppear,
   _onRemove = onRemove,
-  _reuseIdentifier = reuseIdentifier,
   _exposedRatio = exposedRatio ?? 0.0,
-  _validExposedTime = validExposedTime ?? 0;
+  _validExposedTime = validExposedTime ?? 0 {
+    this.childCount = childCount;
+  }
 
   // ADD
-
-  /// life cycle.
 
   final double _exposedRatio;
 
@@ -72,7 +84,16 @@ class SliverChildBuilderDelegate extends SliverChildDelegate implements SKLifeCy
 
   final void Function(int index)? _onRemove;
 
-  final String Function(int index)? _reuseIdentifier;
+  final String Function(int index)? reuseIdentifier;
+
+  /// Add this field if you need to use [LoadMoreController.loadMore]
+  final int Function()? childCountGetter;
+
+  /// Get the childCount from [childCountGetter] first
+  int get childCount =>
+      childCountGetter != null ? childCountGetter!() : (_childCount ?? 0);
+
+  final LoadMoreController? loadMoreController;
 
   @override
   double get exposedRatio => _exposedRatio;
@@ -110,13 +131,14 @@ class SliverChildBuilderDelegate extends SliverChildDelegate implements SKLifeCy
   ///
   /// The delegate wraps the children returned by this builder in
   /// [RepaintBoundary] widgets.
-  final NullableIndexedWidgetBuilder builder;
+  NullableIndexedWidgetBuilder builder;
 
   /// The total number of children this delegate can provide.
   ///
   /// If null, the number of children is determined by the least index for which
   /// [builder] returns null.
-  final int? childCount;
+  int? _childCount;
+  set childCount(int? i) => _childCount = i;
 
   /// Whether to wrap each child in an [AutomaticKeepAlive].
   ///
@@ -186,8 +208,8 @@ class SliverChildBuilderDelegate extends SliverChildDelegate implements SKLifeCy
       return null;
     }
     final Key childKey;
-    if (key is _SaltedValueKey) {
-      final _SaltedValueKey saltedValueKey = key;
+    if (key is _SKSaltedValueKey) {
+      final _SKSaltedValueKey saltedValueKey = key;
       childKey = saltedValueKey.value;
     } else {
       childKey = key;
@@ -210,7 +232,9 @@ class SliverChildBuilderDelegate extends SliverChildDelegate implements SKLifeCy
     if (child == null) {
       return null;
     }
-    final Key? key = child.key != null ? _SaltedValueKey(child.key!) : null;
+    //TODO(endless7): further opt
+    child = SKChild(child);
+    final Key? key = child.key != null ? _SKSaltedValueKey(child.key!) : null;
     if (addRepaintBoundaries)
       child = RepaintBoundary(child: child);
     if (addSemanticIndexes) {
@@ -227,7 +251,7 @@ class SliverChildBuilderDelegate extends SliverChildDelegate implements SKLifeCy
   int? get estimatedChildCount => childCount;
 
   @override
-  bool shouldRebuild(covariant SliverChildBuilderDelegate oldDelegate) => true;
+  bool shouldRebuild(covariant SKSliverChildBuilderDelegate oldDelegate) => true;
 }
 
 // Return a Widget for the given Exception
@@ -242,6 +266,8 @@ Widget _createErrorWidget(Object exception, StackTrace stackTrace) {
   return ErrorWidget.builder(details);
 }
 
-class _SaltedValueKey extends ValueKey<Key> {
-  const _SaltedValueKey(super.key);
+class _SKSaltedValueKey extends ValueKey<Key> {
+  const _SKSaltedValueKey(Key key)
+      : assert(key != null),
+        super(key);
 }

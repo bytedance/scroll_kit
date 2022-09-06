@@ -1,5 +1,16 @@
+// Copyright 2014 The Flutter Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// This file may have been modified by Bytedance Inc.(“Bytedance Inc.'s
+// Modifications”). All Bytedance Inc.'s Modifications are Copyright (2022)
+// Bytedance Inc..
+
 import 'dart:collection';
+import 'package:scroll_kit/scroll_kit.dart';
+
 import 'widget.dart';
+import 'ro.dart';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -23,7 +34,7 @@ class SKSliverMultiBoxAdaptorElement extends RenderObjectElement implements Rend
   final bool _replaceMovedChildren;
 
   @override
-  RenderSliverMultiBoxAdaptor get renderObject => super.renderObject as RenderSliverMultiBoxAdaptor;
+  SKRenderSliverMultiBoxAdaptor get renderObject => super.renderObject as SKRenderSliverMultiBoxAdaptor;
 
   @override
   void update(covariant SKSliverMultiBoxAdaptorWidget newWidget) {
@@ -62,7 +73,7 @@ class SKSliverMultiBoxAdaptorElement extends RenderObjectElement implements Rend
         if (newChild != null) {
           childrenUpdated = childrenUpdated || _childElements[index] != newChild;
           _childElements[index] = newChild;
-          final SliverMultiBoxAdaptorParentData parentData = newChild.renderObject!.parentData! as SliverMultiBoxAdaptorParentData;
+          final SKSliverMultiBoxAdaptorParentData parentData = newChild.renderObject!.parentData! as SKSliverMultiBoxAdaptorParentData;
           // MOD
           if (index == (forwardRefreshCount ?? 0)) {
             parentData.layoutOffset = 0.0;
@@ -80,10 +91,10 @@ class SKSliverMultiBoxAdaptorElement extends RenderObjectElement implements Rend
       }
 
       // ADD
-      assert(forwardRefreshCount != null && forwardRefreshCount != 0
-          && _childElements.keys.contains(0), "forwardRefresh: error when child(0) is not created");
+      assert(!(forwardRefreshCount != null && forwardRefreshCount != 0 && !_childElements.keys.contains(0)),
+      "ScrollKit: forwardRefresh failed when child(0) is not created");
 
-      var i = List<int>.from(
+      final i = List<int>.from(
           _childElements.keys.where((e) => e < (forwardRefreshCount ?? 0)));
       if (i.length == _childElements.keys.length) {
         for (var i = 0; i < _childElements.keys.length; i++) {
@@ -103,8 +114,8 @@ class SKSliverMultiBoxAdaptorElement extends RenderObjectElement implements Rend
       for (final int index in _childElements.keys.toList()) {
         final Key? key = _childElements[index]!.widget.key;
         final int? newIndex = key == null ? null : adaptorWidget.delegate.findIndexByKey(key);
-        final SliverMultiBoxAdaptorParentData? childParentData =
-        _childElements[index]!.renderObject?.parentData as SliverMultiBoxAdaptorParentData?;
+        final SKSliverMultiBoxAdaptorParentData? childParentData =
+        _childElements[index]!.renderObject?.parentData as SKSliverMultiBoxAdaptorParentData?;
 
         if (childParentData != null && childParentData.layoutOffset != null) {
           indexToLayoutOffset[index] = childParentData.layoutOffset!;
@@ -147,7 +158,6 @@ class SKSliverMultiBoxAdaptorElement extends RenderObjectElement implements Rend
       //
       // This logic is not needed if any existing children has been updated,
       // because we will not skip the layout phase if that happens.
-      // 需要验证
       if (!childrenUpdated && _didUnderflow) {
         final int lastKey = _childElements.lastKey() ?? -1;
         final int rightBoundary = lastKey + 1;
@@ -155,7 +165,6 @@ class SKSliverMultiBoxAdaptorElement extends RenderObjectElement implements Rend
         processElement(rightBoundary);
       }
 
-      // END
     } finally {
       _currentlyUpdatingChildIndex = null;
       renderObject.debugChildIntegrityEnabled = true;
@@ -165,6 +174,77 @@ class SKSliverMultiBoxAdaptorElement extends RenderObjectElement implements Rend
   Widget? _build(int index, SKSliverMultiBoxAdaptorWidget widget) {
     return widget.delegate.build(this, index);
   }
+
+  // ADD
+
+  final Map<String, List<Element>> _reuseBucket = <String, List<Element>>{};
+
+  Element? childOfReuseBucket(String? type) {
+    if (type == null || _reuseBucket[type] == null ||
+        _reuseBucket[type]!.isEmpty) {
+      return null;
+    }
+    return _reuseBucket[type]!.removeAt(0);
+  }
+
+  bool reusableChildAvailable(String? type) {
+    if (_reuseBucket[type] != null && _reuseBucket[type]!.isNotEmpty) {
+      if(_reuseBucket[type]![0].renderObject != null) {
+        return true;
+      }else{
+        _reuseBucket[type]!.removeAt(0);
+        return false;
+      }
+    }else{
+      return false;
+    }
+  }
+
+  bool isReuseBucketOverflow(String? type) {
+    if (_reuseBucket[type] != null && _reuseBucket.length >= 5) {
+      return true;
+    }
+    return false;
+  }
+
+  void throwIntoReuseBucket(Element element, String type) {
+    if (!_reuseBucket.containsKey(type)) {
+      _reuseBucket[type] = [element];
+    } else {
+      _reuseBucket[type]!.insert(0, element);
+    }
+  }
+
+  void deactiveReuseBucket() {
+    for (final values in _reuseBucket.values) {
+      for (var child in values) {
+        if(child.renderObject == null) {
+          continue;
+        }
+        _currentlyUpdatingChildIndex = child.slot as int;
+        child.renderObject!.detach();
+        (child.renderObject!.parentData as SKSliverMultiBoxAdaptorParentData)
+            .isInReusePool = true;
+        deactivateChild(child);
+        _currentlyUpdatingChildIndex = null;
+      }
+    }
+  }
+
+  @override
+  void deactivate() {
+    deactiveReuseBucket();
+    super.deactivate();
+  }
+
+  String? typeOf(int index) {
+    if (((widget as SKSliverMultiBoxAdaptorWidget).delegate).reuseIdentifier != null) {
+      return ((widget as SKSliverMultiBoxAdaptorWidget).delegate).reuseIdentifier!(index);
+    }
+    return null;
+  }
+
+  // END
 
   @override
   void createChild(int index, { required RenderBox? after }) {
@@ -177,7 +257,20 @@ class SKSliverMultiBoxAdaptorElement extends RenderObjectElement implements Rend
       try {
         final SKSliverMultiBoxAdaptorWidget adaptorWidget = widget as SKSliverMultiBoxAdaptorWidget;
         _currentlyUpdatingChildIndex = index;
-        newChild = updateChild(_childElements[index], _build(index, adaptorWidget), index);
+        final newWidget = _build(index, adaptorWidget);
+        if (newWidget != null &&
+            typeOf(index) != null &&
+            reusableChildAvailable(typeOf(index))) {
+          final oldChild = childOfReuseBucket(typeOf(index))!;
+          assert(oldChild.widget.runtimeType == newWidget.runtimeType);
+          final oldRenderObject = oldChild.renderObject as RenderBox;
+          renderObject.dropChild(oldRenderObject);
+          renderObject.insert(oldRenderObject, after: after);
+          oldChild.update(newWidget);
+          newChild = oldChild;
+        } else {
+          newChild = updateChild(_childElements[index], newWidget, index);
+        }
       } finally {
         _currentlyUpdatingChildIndex = null;
       }
@@ -191,9 +284,9 @@ class SKSliverMultiBoxAdaptorElement extends RenderObjectElement implements Rend
 
   @override
   Element? updateChild(Element? child, Widget? newWidget, Object? newSlot) {
-    final SliverMultiBoxAdaptorParentData? oldParentData = child?.renderObject?.parentData as SliverMultiBoxAdaptorParentData?;
+    final SKSliverMultiBoxAdaptorParentData? oldParentData = child?.renderObject?.parentData as SKSliverMultiBoxAdaptorParentData?;
     final Element? newChild = super.updateChild(child, newWidget, newSlot);
-    final SliverMultiBoxAdaptorParentData? newParentData = newChild?.renderObject?.parentData as SliverMultiBoxAdaptorParentData?;
+    final SKSliverMultiBoxAdaptorParentData? newParentData = newChild?.renderObject?.parentData as SKSliverMultiBoxAdaptorParentData?;
 
     // Preserve the old layoutOffset if the renderObject was swapped out.
     if (oldParentData != newParentData && oldParentData != null && newParentData != null) {
@@ -213,15 +306,23 @@ class SKSliverMultiBoxAdaptorElement extends RenderObjectElement implements Rend
 
   @override
   void removeChild(RenderBox child) {
-    final int index = renderObject.indexOf(child);
+    final index = renderObject.indexOf(child);
     assert(_currentlyUpdatingChildIndex == null);
     assert(index >= 0);
     owner!.buildScope(this, () {
       assert(_childElements.containsKey(index));
       try {
         _currentlyUpdatingChildIndex = index;
-        final Element? result = updateChild(_childElements[index], null, index);
-        assert(result == null);
+        final type = typeOf(index);
+        if (type == null || isReuseBucketOverflow(type)) {
+          final result = updateChild(_childElements[index], null, index);
+          assert(result == null);
+        } else {
+          final box = _childElements[index]!.renderObject as RenderBox;
+          renderObject.remove(box);
+          renderObject.adoptChild(box);
+          throwIntoReuseBucket(_childElements[index]!, type);
+        }
       } finally {
         _currentlyUpdatingChildIndex = null;
       }
@@ -350,7 +451,7 @@ class SKSliverMultiBoxAdaptorElement extends RenderObjectElement implements Rend
   @override
   void didAdoptChild(RenderBox child) {
     assert(_currentlyUpdatingChildIndex != null);
-    final SliverMultiBoxAdaptorParentData childParentData = child.parentData! as SliverMultiBoxAdaptorParentData;
+    final SKSliverMultiBoxAdaptorParentData childParentData = child.parentData! as SKSliverMultiBoxAdaptorParentData;
     childParentData.index = _currentlyUpdatingChildIndex;
   }
 
@@ -368,7 +469,7 @@ class SKSliverMultiBoxAdaptorElement extends RenderObjectElement implements Rend
     assert(renderObject.debugValidateChild(child));
     renderObject.insert(child as RenderBox, after: _currentBeforeChild);
     assert(() {
-      final SliverMultiBoxAdaptorParentData childParentData = child.parentData! as SliverMultiBoxAdaptorParentData;
+      final SKSliverMultiBoxAdaptorParentData childParentData = child.parentData! as SKSliverMultiBoxAdaptorParentData;
       assert(slot == childParentData.index);
       return true;
     }());
@@ -398,7 +499,7 @@ class SKSliverMultiBoxAdaptorElement extends RenderObjectElement implements Rend
   @override
   void debugVisitOnstageChildren(ElementVisitor visitor) {
     _childElements.values.cast<Element>().where((Element child) {
-      final SliverMultiBoxAdaptorParentData parentData = child.renderObject!.parentData! as SliverMultiBoxAdaptorParentData;
+      final SKSliverMultiBoxAdaptorParentData parentData = child.renderObject!.parentData! as SKSliverMultiBoxAdaptorParentData;
       final double itemExtent;
       switch (renderObject.constraints.axis) {
         case Axis.horizontal:

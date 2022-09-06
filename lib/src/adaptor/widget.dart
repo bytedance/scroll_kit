@@ -1,8 +1,17 @@
+// Copyright 2014 The Flutter Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// This file may have been modified by Bytedance Inc.(“Bytedance Inc.'s
+// Modifications”). All Bytedance Inc.'s Modifications are Copyright (2022)
+// Bytedance Inc..
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/rendering.dart';
+import 'package:scroll_kit/scroll_kit.dart';
 
 import 'element.dart';
+import 'ro.dart';
 
 abstract class SKSliverMultiBoxAdaptorWidget extends SliverWithKeepAliveWidget {
   /// Initializes fields for subclasses.
@@ -35,13 +44,13 @@ abstract class SKSliverMultiBoxAdaptorWidget extends SliverWithKeepAliveWidget {
   ///    commonly used subclasses of [SliverChildDelegate] that use a builder
   ///    callback and an explicit child list, respectively.
   /// {@endtemplate}
-  final SliverChildDelegate delegate;
+  final SKSliverChildBuilderDelegate delegate;
 
   @override
   SKSliverMultiBoxAdaptorElement createElement() => SKSliverMultiBoxAdaptorElement(this);
 
   @override
-  RenderSliverMultiBoxAdaptor createRenderObject(BuildContext context);
+  SKRenderSliverMultiBoxAdaptor createRenderObject(BuildContext context);
 
   /// Returns an estimate of the max scroll extent for all the children.
   ///
@@ -73,5 +82,21 @@ abstract class SKSliverMultiBoxAdaptorWidget extends SliverWithKeepAliveWidget {
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties.add(DiagnosticsProperty<SliverChildDelegate>('delegate', delegate));
+  }
+}
+
+class SKChild extends StatefulWidget {
+  const SKChild(this.child, {super.key});
+  final Widget child;
+  @override
+  State<StatefulWidget> createState() {
+    return _SKChildState();
+  }
+}
+
+class _SKChildState extends State<SKChild> {
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
   }
 }
