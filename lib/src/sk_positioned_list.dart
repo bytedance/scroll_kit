@@ -5,7 +5,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:scroll_kit/src/sk_sliver_list.dart';
-import 'package:scroll_to_index/scroll_to_index.dart';
+import 'utils/auto_scroll.dart';
 import 'sk_child_delegate.dart';
 
 // ignore: must_be_immutable
@@ -98,6 +98,7 @@ class _SKPositionedListState extends State<SKPositionedList>
         SKSliverList(
           delegate: widget.delegate,
           forwardRefreshCount: forwardRefreshCount,
+          scrollController: widget.controller.scrollController,
         )
       ],
     );

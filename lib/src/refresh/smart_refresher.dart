@@ -10,10 +10,9 @@
 
 import 'dart:async';
 
-import 'package:scroll_to_index/scroll_to_index.dart';
+import '../utils/auto_scroll.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' hide RefreshIndicator, RefreshIndicatorState;
-import 'package:flutter/physics.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/foundation.dart';
 import 'package:scroll_kit/src/refresh/internals/slivers.dart';

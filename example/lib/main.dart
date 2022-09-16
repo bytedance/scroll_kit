@@ -2,7 +2,8 @@
 
 import 'package:example/pages/life_cycle_page.dart';
 import 'package:example/pages/loadMore_page.dart';
-import 'package:example/pages/position_page.dart';
+import 'package:example/pages/jump_page.dart';
+import 'package:example/pages/scroll_page.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -31,8 +32,9 @@ class MyApp extends StatelessWidget {
 class HomePage extends StatelessWidget {
 
   final Map<String, Widget> m = {
-    "Position": const PositionedListPage(),
+    "JumpTo": const JumpToPage(),
     "loadMore": const LoadMorePage(),
+    "ScrollTo": const ScrollToPage(),
     "LifeCycle": const LifeCyclePage()
   };
 

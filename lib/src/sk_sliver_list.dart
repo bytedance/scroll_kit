@@ -9,6 +9,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
+import 'package:scroll_kit/src/utils/auto_scroll.dart';
 import 'sk_child_delegate.dart';
 import 'adaptor/widget.dart';
 import 'adaptor/element.dart';
@@ -20,6 +21,7 @@ class SKSliverList extends SKSliverMultiBoxAdaptorWidget {
     super.key,
     required super.delegate,
     super.forwardRefreshCount,
+    super.scrollController
   });
 
   @override
@@ -30,8 +32,10 @@ class SKSliverList extends SKSliverMultiBoxAdaptorWidget {
   SKRenderSliverList createRenderObject(BuildContext context) {
     final SKSliverMultiBoxAdaptorElement element =
         context as SKSliverMultiBoxAdaptorElement;
-    return SKRenderSliverList(
+    final renderList = SKRenderSliverList(
         childManager: element, lifeCycleManager: delegate);
+    scrollController?.adaptor = renderList;
+    return renderList;
   }
 }
 

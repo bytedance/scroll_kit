@@ -241,6 +241,7 @@ abstract class SKRenderSliverMultiBoxAdaptor extends RenderSliver
   void _createOrObtainChild(int index, { required RenderBox? after }) {
     invokeLayoutCallback<SliverConstraints>((SliverConstraints constraints) {
       assert(constraints == this.constraints);
+      existChildren.add(index);
       if (_keepAliveBucket.containsKey(index)) {
         final RenderBox child = _keepAliveBucket.remove(index)!;
         final SKSliverMultiBoxAdaptorParentData childParentData = child.parentData! as SKSliverMultiBoxAdaptorParentData;
@@ -257,6 +258,7 @@ abstract class SKRenderSliverMultiBoxAdaptor extends RenderSliver
 
   void _destroyOrCacheChild(RenderBox child) {
     final SKSliverMultiBoxAdaptorParentData childParentData = child.parentData! as SKSliverMultiBoxAdaptorParentData;
+    existChildren.remove(indexOf(child));
     if (childParentData.keepAlive) {
       assert(!childParentData._keptAlive);
       remove(child);
@@ -273,6 +275,8 @@ abstract class SKRenderSliverMultiBoxAdaptor extends RenderSliver
   // ADD
 
   final List<int> _exposedChildren = [];
+
+  final List<int> existChildren = [];
 
   final SKLifeCycleManager _lifeCycleManager;
 

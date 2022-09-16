@@ -9,6 +9,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/rendering.dart';
 import 'package:scroll_kit/scroll_kit.dart';
+import 'package:scroll_kit/src/utils/auto_scroll.dart';
 
 import 'element.dart';
 import 'ro.dart';
@@ -18,10 +19,13 @@ abstract class SKSliverMultiBoxAdaptorWidget extends SliverWithKeepAliveWidget {
   const SKSliverMultiBoxAdaptorWidget({
   super.key,
   required this.delegate,
-  this.forwardRefreshCount
+  this.forwardRefreshCount,
+  this.scrollController
   }) : assert(delegate != null);
 
   final int? forwardRefreshCount;
+
+  final AutoScrollController? scrollController;
 
   /// {@template flutter.widgets.SliverMultiBoxAdaptorWidget.delegate}
   /// The delegate that provides the children for this widget.

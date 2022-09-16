@@ -17,8 +17,8 @@ const scrollDuration = Duration(seconds: 2);
 
 const randomMax = 1 << 32;
 
-class PositionedListPage extends StatefulWidget {
-  const PositionedListPage({Key? key}) : super(key: key);
+class JumpToPage extends StatefulWidget {
+  const JumpToPage({Key? key}) : super(key: key);
 
   @override
   _ScrollablePositionedListPageState createState() =>
@@ -26,7 +26,7 @@ class PositionedListPage extends StatefulWidget {
 }
 
 class _ScrollablePositionedListPageState
-    extends State<PositionedListPage> {
+    extends State<JumpToPage> {
 
   late List<double> itemHeights;
   late List<Color> itemColors;
@@ -64,7 +64,7 @@ class _ScrollablePositionedListPageState
                 children: <Widget>[
                   Column(
                     children: <Widget>[
-                      scrollControlButtons,
+                      // scrollControlButtons,
                       jumpControlButtons,
                       // alignmentControl,
                     ],
@@ -132,16 +132,6 @@ class _ScrollablePositionedListPageState
         ),
       );
     }
-
-  Widget get scrollControlButtons => Row(
-    children: <Widget>[
-      const Text('scroll to'),
-      scrollButton(0),
-      scrollButton(5),
-      scrollButton(10),
-      scrollButton(30),
-    ],
-  );
 
   Widget get jumpControlButtons => Row(
     children: <Widget>[
