@@ -16,7 +16,7 @@ ScrollKit provides additional features for list in Flutter Apps.
 ## Getting started
 
 ```yaml
-scroll_kit: ^1.0.0
+scroll_kit: ^0.1.0
 ```
 
 ## Usage

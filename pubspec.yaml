@@ -1,6 +1,6 @@
 name: scroll_kit
 description: ScrollKit provides additional features for list in Flutter Apps.
-version: 1.0.0
+version: 0.1.0
 homepage: https://github.com/bytedance/scroll_kit
 
 environment:
