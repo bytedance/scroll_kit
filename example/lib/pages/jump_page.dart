@@ -101,7 +101,7 @@ class _ScrollablePositionedListPageState
 
   List<int> data = () {
     List<int> data = <int>[];
-    for (var i = 0; i < 50; i++) {
+    for (var i = 0; i < 10000; i++) {
       data.add(i);
     }
     return data;
@@ -135,17 +135,19 @@ class _ScrollablePositionedListPageState
 
   Widget get jumpControlButtons => Row(
     children: <Widget>[
-      const Text('jump to'),
+      const Text('jump'),
       jumpButton(0),
       jumpButton(5),
       jumpButton(10),
       jumpButton(30),
+      jumpButton(300),
+      jumpButton(3000),
     ],
   );
 
     final _scrollButtonStyle = ButtonStyle(
       padding: MaterialStateProperty.all(
-        const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+        const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
       ),
       minimumSize: MaterialStateProperty.all(Size.zero),
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
