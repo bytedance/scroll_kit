@@ -5,13 +5,13 @@ ScrollKit provides additional features for list in Flutter Apps.
 
 ## Features
 
-- [✓] JumpTo(int index) with a high performance.
-- [✓] ScrollTo(int index).
+- [✓] `jumpTo(int index)` with a high performance.
+- [✓] `scrollTo (int index)`.
 - [✓] Load list content from both leading and trailing direction.
-- [✓] Reuse the Element and the RenderObject of the list item.
+- [✓] Reuse the `Element` and the `RenderObject` of the list item.
 - [✓] Provide life-cycle callbacks of list items.
 - [✓] Load more list items without refreshing the whole list.
-- [✓] Provides JumpTo, ScrollTo with compatibility of refresh components(SmartRefresher).
+- [✓] Provide `jumpTo`, `scrollTo` with compatibility of refresh components (`SmartRefresher`).
 
 ## Getting started
 
